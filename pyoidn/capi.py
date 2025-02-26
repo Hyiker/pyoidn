@@ -131,15 +131,35 @@ OIDN_CAPI = (
 )
 
 
+def wrap_dylib(lib):
+    prefix = "lib"
+    if os.name == "nt":
+        prefix = ""
+
+    if os.name == "nt":
+        suffix = ".dll"
+    elif sys.platform == "darwin":
+        suffix = ".dylib"
+    else:
+        suffix = ".so"
+
+    return prefix + lib + suffix
+
+
 def __load_capi():
+    is_win = os.name == "nt"
+
     ffi = FFI()
     ffi.cdef(OIDN_CAPI)
     dll_dir = os.path.join(
-        os.path.dirname(__file__), "oidn", "bin" if os.name == "nt" else "lib"
+        os.path.dirname(__file__), "oidn", "bin" if is_win else "lib"
     )
     dylibs = [
-        "libOpenImageDenoise",
+        wrap_dylib("OpenImageDenoise"),
     ]
+    if is_win:
+        # Windows requires device .dll loaded
+        dylibs = [wrap_dylib("OpenImageDenoise_device_cpu")] + dylibs
     for dylib in dylibs:
         entrypoint = ffi.dlopen(os.path.join(dll_dir, dylib))
     return ffi, entrypoint

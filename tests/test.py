@@ -5,8 +5,8 @@ import numpy as np
 from PIL import Image
 from pathlib import Path
 
-# here = Path(__file__).parent.absolute()
-# sys.path.append(here.parent.absolute().as_posix())
+here = Path(__file__).parent.absolute()
+sys.path.append(here.parent.absolute().as_posix())
 
 TEST_DIR = os.path.abspath(os.path.dirname(__file__))
 
@@ -31,6 +31,7 @@ class PyOidnTest(unittest.TestCase):
         import pyoidn
 
         device = pyoidn.Device()
+        self.assertIsNone(device.get_error())
         device.commit()
         device.release()
 
@@ -41,6 +42,7 @@ class PyOidnTest(unittest.TestCase):
         device.commit()
 
         filter = pyoidn.Filter(device, "RT")
+        self.assertIsNone(device.get_error())
 
         filter.release()
         device.release()
@@ -69,6 +71,7 @@ class PyOidnTest(unittest.TestCase):
         result = np.array(np.clip(result * 255, 0, 255), dtype=np.uint8)
         res_img = Image.fromarray(result)
         res_img.save(os.path.join(TEST_DIR, "data", "denoised_example.png"))
+        self.assertIsNone(device.get_error())
 
         filter.release()
         device.release()
@@ -93,6 +96,7 @@ class PyOidnTest(unittest.TestCase):
         filter.set_image(pyoidn.OIDN_IMAGE_OUTPUT, result, pyoidn.OIDN_FORMAT_FLOAT3)
         filter.commit()
         filter.execute_async()
+        self.assertIsNone(device.get_error())
 
         device.wait()
 

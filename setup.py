@@ -2,17 +2,20 @@ from setuptools import setup, find_packages
 import platform
 
 
-def get_platform():
+def get_whl_platform():
     system = platform.system().lower()
-
-    if system == "linux":
-        return "Linux"
-    elif system == "darwin":
-        return "Mac OS-X"
-    elif system == "windows":
-        return "Windows"
+    machine = platform.machine().lower()
+    
+    if system == 'darwin':
+        if machine == 'arm64':
+            return 'macosx_12_0_arm64'
+        return 'macosx_10_15_x86_64'
+    elif system == 'linux':
+        return 'manylinux2014_x86_64'
+    elif system == 'windows':
+        return 'win_amd64'
     else:
-        raise OSError(f"Unsupported platform: {system}")
+        raise RuntimeError(f"Unsupported platform: {system} {machine}")
 
 
 setup(
@@ -52,5 +55,10 @@ setup(
         "Environment :: GPU",
         "Natural Language :: English",
     ],
-    platforms=[get_platform()],
+    platforms=["Linux", "Windows", "macOS"],
+    options={
+        "bdist_wheel": {
+            "plat_name": get_whl_platform()
+        }
+    }
 )

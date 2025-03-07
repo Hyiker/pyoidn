@@ -5,7 +5,7 @@ import platform
 def get_whl_platform():
     system = platform.system().lower()
     machine = platform.machine().lower()
-    
+
     if system == 'darwin':
         if machine == 'arm64':
             return 'macosx_12_0_arm64'
@@ -20,7 +20,7 @@ def get_whl_platform():
 
 setup(
     name="pyoidn",
-    version="2.3.0",
+    version="2.3.2",
     packages=find_packages(),
     package_data={
         "pyoidn": ["oidn/**"],

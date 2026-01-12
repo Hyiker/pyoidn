@@ -57,5 +57,8 @@ jobs:
 
       - name: Build and test
         run: |
-          . .github/workflows/scripts/build_and_test.sh
+          . .github/workflows/scripts/build.sh
+          pip install -r requirements-test.txt
+          python tests/test.py
+        shell: bash
         continue-on-error: false

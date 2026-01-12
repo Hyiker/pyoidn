@@ -1,0 +1,59 @@
+name: Build and Test
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+  push:
+    branches:
+      - master
+
+jobs:
+  test:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: windows-latest
+            platform: windows
+            arch: x64
+            ext: zip
+          - os: ubuntu-latest
+            platform: linux
+            arch: x86_64
+            ext: tar.gz
+          - os: macos-15-intel
+            platform: macos
+            arch: x86_64
+            ext: tar.gz
+          - os: macos-latest
+            platform: macos
+            arch: arm64
+            ext: tar.gz
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.10"
+
+      - name: Get version from tag
+        id: get_version
+        run: bash .github/workflows/scripts/get_latest_version.sh
+        shell: bash
+
+      - name: Download OIDN
+        run: |
+          . .github/workflows/scripts/download_oidn.sh
+        env:
+          VERSION: ${{ env.VERSION }}
+          PLATFORM: ${{ matrix.platform }}
+          ARCH: ${{ matrix.arch }}
+        shell: bash
+
+      - name: Build and test
+        run: |
+          . .github/workflows/scripts/build_and_test.sh
+        continue-on-error: false

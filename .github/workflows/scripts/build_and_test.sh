@@ -1,7 +1,7 @@
 #!/bin/bash
 
 python -m pip install --upgrade pip
-pip install build
+pip install build wheel
 
 python setup.py bdist_wheel
 

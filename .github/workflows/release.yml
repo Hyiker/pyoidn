@@ -57,12 +57,8 @@ jobs:
       
       - name: Check version consistency
         run: |
-          FILE_VERSION=$(cat version.txt)
-          GIT_TAG=${GITHUB_REF#refs/tags/v}
-          if [ "v$FILE_VERSION" != "$GIT_TAG" ]; then
-            echo "Version mismatch: version.txt ($FILE_VERSION) does not match git tag (v$GIT_TAG)"
-            exit 1
-          fi
+          . .github/workflows/scripts/check_version.sh
+        shell: bash
 
       - name: Upload wheel as artifact
         uses: actions/upload-artifact@v4

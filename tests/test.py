@@ -39,7 +39,8 @@ class PyOidnTest(unittest.TestCase):
 
     def test_version_string(self):
         import pyoidn
-        print(pyoidn.version.oidn_version)
+
+        self.assertEqual(pyoidn.version.oidn_version, "2.4.0")
 
     def test_new_filter(self):
         import pyoidn

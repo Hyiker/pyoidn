@@ -1,7 +1,7 @@
 # Intel Open Image Denoise python binding
 
 <img alt="GitHub Tag" src="https://img.shields.io/github/v/tag/Hyiker/pyoidn">
-<img alt="GitHub Actions Workflow Status" src="https://img.shields.io/github/actions/workflow/status/Hyiker/pyoidn/build_publish.yml">
+<img alt="GitHub Actions Workflow Status" src="https://img.shields.io/github/actions/workflow/status/Hyiker/pyoidn/testing.yml">
 
 
 Unofficial Intel [OIDN](https://www.openimagedenoise.org/) python binding. I pick some of my mostly used functionalities of OIDN, feature request with issues/PRs are welcomed.

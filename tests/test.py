@@ -5,9 +5,6 @@ import numpy as np
 from PIL import Image
 from pathlib import Path
 
-here = Path(__file__).parent.absolute()
-sys.path.append(here.parent.absolute().as_posix())
-
 TEST_DIR = os.path.abspath(os.path.dirname(__file__))
 
 

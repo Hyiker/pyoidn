@@ -1,1 +1,1 @@
-oidn_version = "2.3.0"
+oidn_version = "2.3.3"

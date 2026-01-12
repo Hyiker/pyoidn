@@ -19,7 +19,7 @@ jobs:
             platform: linux
             arch: x86_64
             ext: tar.gz
-          - os: macos-latest
+          - os: macos-13
             platform: macos
             arch: x86_64
             ext: tar.gz
@@ -66,16 +66,16 @@ jobs:
           pip install build twine
 
       - name: Build package
+        env:
+          TARGET_ARCH: ${{ matrix.arch }}
         run: python -m build
 
       - name: Install package for testing
-        if: matrix.platform != 'macos'
         run: |
           pip install ./dist/*.whl
           pip install -r requirements-test.txt
 
       - name: Run tests
-        if: matrix.platform != 'macos'
         run: |
           python tests/test.py
         continue-on-error: false

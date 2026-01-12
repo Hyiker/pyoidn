@@ -1,4 +1,4 @@
-name: Build and Publish
+name: Publishing Release
 
 on:
   push:
@@ -29,56 +29,42 @@ jobs:
             ext: tar.gz
 
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
+        with:
+          fetch-tags: true
 
       - name: Set up Python
         uses: actions/setup-python@v4
         with:
           python-version: "3.10"
 
-      - name: Get version from tag
+      - name: Get version from file
         id: get_version
-        run: echo "VERSION=${GITHUB_REF#refs/tags/v}" >> $GITHUB_ENV
+        run: echo "VERSION=$(cat version.txt)" >> $GITHUB_ENV
         shell: bash
 
-      - name: Download OIDN (Windows)
-        if: matrix.platform == 'windows'
+      - name: Download OIDN
         run: |
-          curl -L -o oidn.zip https://github.com/RenderKit/oidn/releases/download/v${{ env.VERSION }}/oidn-${{ env.VERSION }}.${{ matrix.arch }}.${{ matrix.platform }}.zip
-          7z x oidn.zip
-          mkdir -p pyoidn/oidn
-          cp -r oidn-${{ env.VERSION }}.${{ matrix.arch }}.${{ matrix.platform }}/bin pyoidn/oidn/
-          cp -r oidn-${{ env.VERSION }}.${{ matrix.arch }}.${{ matrix.platform }}/lib pyoidn/oidn/
-        shell: bash
-
-      - name: Download OIDN (Unix)
-        if: matrix.platform != 'windows'
-        run: |
-          curl -L -o oidn.tar.gz https://github.com/RenderKit/oidn/releases/download/v${{ env.VERSION }}/oidn-${{ env.VERSION }}.${{ matrix.arch }}.${{ matrix.platform }}.tar.gz
-          tar -xzf oidn.tar.gz
-          mkdir -p pyoidn/oidn
-          cp -r oidn-${{ env.VERSION }}.${{ matrix.arch }}.${{ matrix.platform }}/bin pyoidn/oidn/
-          cp -r oidn-${{ env.VERSION }}.${{ matrix.arch }}.${{ matrix.platform }}/lib pyoidn/oidn/
-
-      - name: Install build dependencies
-        run: |
-          python -m pip install --upgrade pip
-          pip install build twine
-
-      - name: Build package
+          . .github/workflows/scripts/download_oidn.sh
         env:
-          TARGET_ARCH: ${{ matrix.arch }}
-        run: python -m build
+          VERSION: ${{ env.VERSION }}
+          PLATFORM: ${{ matrix.platform }}
+          ARCH: ${{ matrix.arch }}
+        shell: bash
 
-      - name: Install package for testing
+      - name: Build and test
         run: |
-          pip install ./dist/*.whl
-          pip install -r requirements-test.txt
-
-      - name: Run tests
-        run: |
-          python tests/test.py
+          . .github/workflows/scripts/build_and_test.sh
         continue-on-error: false
+      
+      - name: Check version consistency
+        run: |
+          FILE_VERSION=$(cat version.txt)
+          GIT_TAG=${GITHUB_REF#refs/tags/v}
+          if [ "v$FILE_VERSION" != "$GIT_TAG" ]; then
+            echo "Version mismatch: version.txt ($FILE_VERSION) does not match git tag (v$GIT_TAG)"
+            exit 1
+          fi
 
       - name: Upload wheel as artifact
         uses: actions/upload-artifact@v4
@@ -91,7 +77,7 @@ jobs:
     needs: build
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
       - name: Set up Python
         uses: actions/setup-python@v4

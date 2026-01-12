@@ -4,6 +4,7 @@ import os
 import numpy as np
 from PIL import Image
 from pathlib import Path
+import tempfile
 
 TEST_DIR = os.path.abspath(os.path.dirname(__file__))
 
@@ -21,6 +22,10 @@ def open_data_image(name: str):
 
 
 class PyOidnTest(unittest.TestCase):
+    @property
+    def output_dir(self):
+        return tempfile.gettempdir()
+
     def test_import(self):
         import pyoidn
 
@@ -31,6 +36,10 @@ class PyOidnTest(unittest.TestCase):
         self.assertIsNone(device.get_error())
         device.commit()
         device.release()
+
+    def test_version_string(self):
+        import pyoidn
+        print(pyoidn.version.oidn_version)
 
     def test_new_filter(self):
         import pyoidn
@@ -67,7 +76,7 @@ class PyOidnTest(unittest.TestCase):
 
         result = np.array(np.clip(result * 255, 0, 255), dtype=np.uint8)
         res_img = Image.fromarray(result)
-        res_img.save(os.path.join(TEST_DIR, "data", "denoised_example.png"))
+        res_img.save(os.path.join(self.output_dir, "denoised_example.png"))
         self.assertIsNone(device.get_error())
 
         filter.release()
@@ -99,7 +108,7 @@ class PyOidnTest(unittest.TestCase):
 
         result = np.array(np.clip(result * 255, 0, 255), dtype=np.uint8)
         res_img = Image.fromarray(result)
-        res_img.save(os.path.join(TEST_DIR, "data", "denoised_example_async.png"))
+        res_img.save(os.path.join(self.output_dir, "denoised_example_async.png"))
 
         filter.release()
         device.release()

@@ -37,6 +37,10 @@ class PyOidnTest(unittest.TestCase):
         device.commit()
         device.release()
 
+    def test_version_string(self):
+        import pyoidn
+        print(pyoidn.version.oidn_version)
+
     def test_new_filter(self):
         import pyoidn
 

@@ -1,58 +1,17 @@
 import unittest
-import sys
-import os
+import utils
 import numpy as np
-from PIL import Image
-from pathlib import Path
-import tempfile
-
-TEST_DIR = os.path.abspath(os.path.dirname(__file__))
 
 
-def open_data_image(name: str):
-    return (
-        np.array(
-            Image.open(
-                os.path.join(TEST_DIR, "data", name),
-            ),
-            dtype=np.float32,
-        )
-        / 255.0
-    )
-
-
-class PyOidnTest(unittest.TestCase):
-    @property
-    def output_dir(self):
-        return tempfile.gettempdir()
+class PyOidnMiscTest(unittest.TestCase):
 
     def test_import(self):
         import pyoidn
-
-    def test_new_device(self):
-        import pyoidn
-
-        device = pyoidn.Device()
-        self.assertIsNone(device.get_error())
-        device.commit()
-        device.release()
 
     def test_version_string(self):
         import pyoidn
 
         self.assertEqual(pyoidn.version.oidn_version, "2.4.0")
-
-    def test_new_filter(self):
-        import pyoidn
-
-        device = pyoidn.Device()
-        device.commit()
-
-        filter = pyoidn.Filter(device, "RT")
-        self.assertIsNone(device.get_error())
-
-        filter.release()
-        device.release()
 
     def test_denoise(self):
         import pyoidn
@@ -62,9 +21,9 @@ class PyOidnTest(unittest.TestCase):
 
         filter = pyoidn.Filter(device, "RT")
 
-        color = open_data_image("noisy.jpeg")
-        normal = open_data_image("normal.jpeg")
-        albedo = open_data_image("albedo.jpeg")
+        color = utils.read_image("noisy.jpeg")
+        normal = utils.read_image("normal.jpeg")
+        albedo = utils.read_image("albedo.jpeg")
 
         result = np.zeros_like(color, dtype=np.float32)
 
@@ -75,10 +34,9 @@ class PyOidnTest(unittest.TestCase):
         filter.commit()
         filter.execute()
 
-        result = np.array(np.clip(result * 255, 0, 255), dtype=np.uint8)
-        res_img = Image.fromarray(result)
-        res_img.save(os.path.join(self.output_dir, "denoised_example.png"))
         self.assertIsNone(device.get_error())
+        # Check not all zeros in result
+        self.assertTrue(np.any(result != 0))
 
         filter.release()
         device.release()
@@ -91,9 +49,9 @@ class PyOidnTest(unittest.TestCase):
 
         filter = pyoidn.Filter(device, "RT")
 
-        color = open_data_image("noisy.jpeg")
-        normal = open_data_image("normal.jpeg")
-        albedo = open_data_image("albedo.jpeg")
+        color = utils.read_image("noisy.jpeg")
+        normal = utils.read_image("normal.jpeg")
+        albedo = utils.read_image("albedo.jpeg")
 
         result = np.zeros_like(color, dtype=np.float32)
 
@@ -103,13 +61,13 @@ class PyOidnTest(unittest.TestCase):
         filter.set_image(pyoidn.OIDN_IMAGE_OUTPUT, result, pyoidn.OIDN_FORMAT_FLOAT3)
         filter.commit()
         filter.execute_async()
+
         self.assertIsNone(device.get_error())
 
         device.wait()
 
-        result = np.array(np.clip(result * 255, 0, 255), dtype=np.uint8)
-        res_img = Image.fromarray(result)
-        res_img.save(os.path.join(self.output_dir, "denoised_example_async.png"))
+        # Check not all zeros in result
+        self.assertTrue(np.any(result != 0))
 
         filter.release()
         device.release()

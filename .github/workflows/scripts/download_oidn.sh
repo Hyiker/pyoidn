@@ -3,23 +3,23 @@
 set -euo pipefail
 
 # Expects environment variables:
-#   VERSION  - OIDN version (e.g., 2.3.3)
+#   OIDN_VERSION  - OIDN version (e.g., 2.3.3)
 #   ARCH     - Architecture (e.g., x64, x86_64, arm64)
 #   PLATFORM - Platform (windows, linux, macos)
 
-VERSION="${VERSION:-}"
+OIDN_VERSION="${OIDN_VERSION:-}"
 ARCH="${ARCH:-}"
 PLATFORM="${PLATFORM:-}"
 
-if [[ -z "${VERSION}" || -z "${ARCH}" || -z "${PLATFORM}" ]]; then
-  echo "Missing required env: VERSION='${VERSION:-}', ARCH='${ARCH:-}', PLATFORM='${PLATFORM:-}'" >&2
+if [[ -z "${OIDN_VERSION}" || -z "${ARCH}" || -z "${PLATFORM}" ]]; then
+  echo "Missing required env: OIDN_VERSION='${OIDN_VERSION:-}', ARCH='${ARCH:-}', PLATFORM='${PLATFORM:-}'" >&2
   exit 1
 fi
 
-FILENAME="oidn-${VERSION}.${ARCH}.${PLATFORM}"
-BASE_URL="https://github.com/RenderKit/oidn/releases/download/v${VERSION}"
+FILENAME="oidn-${OIDN_VERSION}.${ARCH}.${PLATFORM}"
+BASE_URL="https://github.com/RenderKit/oidn/releases/download/v${OIDN_VERSION}"
 
-echo "Preparing to download OIDN: version=${VERSION}, arch=${ARCH}, platform=${PLATFORM}" 
+echo "Preparing to download OIDN: version=${OIDN_VERSION}, arch=${ARCH}, platform=${PLATFORM}" 
 
 mkdir -p pyoidn/oidn
 

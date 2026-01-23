@@ -41,9 +41,10 @@ jobs:
         with:
           python-version: "3.10"
 
-      - name: Get version from file
-        id: get_version
-        run: echo "VERSION=$(cat version.txt)" >> $GITHUB_ENV
+      - name: Get tag version and OIDN version
+        id: get_versions
+        run: |
+          . .github/workflows/scripts/get_versions.sh
         shell: bash
 
       - name: Download OIDN
@@ -59,6 +60,6 @@ jobs:
         run: |
           . .github/workflows/scripts/build.sh
           pip install -r requirements-test.txt
-          python tests/test.py
+          python -m unittest discover ./tests/
         shell: bash
         continue-on-error: false

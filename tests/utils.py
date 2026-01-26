@@ -1,8 +1,9 @@
-import simpleimageio as sio
+from PIL import Image
 import os
 from pathlib import Path
 import sys
 import tempfile
+import numpy as np
 
 
 def here() -> Path:
@@ -24,7 +25,7 @@ def temp_output_dir() -> Path:
 
 
 def read_image(name: str):
-    return sio.read(str(data_dir() / name)).astype("float32")
+    return np.array(Image.open(data_dir() / name), dtype=np.float32) / 255.0
 
 
 def setup_module():

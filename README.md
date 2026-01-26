@@ -1,26 +1,39 @@
-# Intel Open Image Denoise python binding
+# PyOIDN: Intel Open Image Denoise Python binding
 
 <img alt="GitHub Tag" src="https://img.shields.io/github/v/tag/Hyiker/pyoidn">
 <img alt="GitHub Actions Workflow Status" src="https://img.shields.io/github/actions/workflow/status/Hyiker/pyoidn/testing.yml">
 
+Unofficial Intel [Open Image Denoise (OIDN)](https://www.openimagedenoise.org/) Python binding.
 
-Unofficial Intel [OIDN](https://www.openimagedenoise.org/) python binding. I pick some of my mostly used functionalities of OIDN, feature request with issues/PRs are welcomed.
+## What you get
 
-Current implementation only supports numpy as input/output buffer. PyTorch version will be developed soon.
+- Simple `Device` / `Filter` wrapper around OIDN.
+- Numpy arrays as input/output buffers.
+- Optional auxiliary inputs (albedo/normal) for ray-traced denoising.
 
-## Install and Usage
+Current implementation only supports NumPy input/output buffers. (A PyTorch version may be added in the future.)
 
-Install pyoidn with:
+## Install
 
 ```bash
 pip install pyoidn
 ```
 
-A simple for ray traced image denoising:
+## Quickstart
+
+Given a noisy image, plus its normal map and albedo map, denoise and save the result.
+
+![noisy_color](imgs/result_noisy.png)
 
 ```python
+import numpy as np
+from PIL import Image
+import pyoidn
+
+
 def load_image(path: str) -> np.ndarray:
     return np.array(Image.open(path), dtype=np.float32) / 255.0
+
 
 color = load_image(color_path)
 normal = load_image(normal_path)
@@ -30,30 +43,38 @@ result = np.zeros_like(color, dtype=np.float32)
 device = pyoidn.Device()
 device.commit()
 
-filter = pyoidn.Filter(device, "RT")
-filter.set_image(pyoidn.OIDN_IMAGE_COLOR, color, pyoidn.OIDN_FORMAT_FLOAT3)
-filter.set_image(pyoidn.OIDN_IMAGE_NORMAL, normal, pyoidn.OIDN_FORMAT_FLOAT3)
-filter.set_image(pyoidn.OIDN_IMAGE_ALBEDO, albedo, pyoidn.OIDN_FORMAT_FLOAT3)
-filter.set_image(pyoidn.OIDN_IMAGE_OUTPUT, result, pyoidn.OIDN_FORMAT_FLOAT3)
+flt = pyoidn.Filter(device, "RT")
+flt.set_image(pyoidn.OIDN_IMAGE_COLOR, color, pyoidn.OIDN_FORMAT_FLOAT3)
+flt.set_image(pyoidn.OIDN_IMAGE_NORMAL, normal, pyoidn.OIDN_FORMAT_FLOAT3)
+flt.set_image(pyoidn.OIDN_IMAGE_ALBEDO, albedo, pyoidn.OIDN_FORMAT_FLOAT3)
+flt.set_image(pyoidn.OIDN_IMAGE_OUTPUT, result, pyoidn.OIDN_FORMAT_FLOAT3)
 
-filter.commit()
-filter.execute()
+flt.commit()
+flt.execute()
 
-result = np.array(np.clip(result * 255, 0, 255), dtype=np.uint8)
-Image.fromarray(result).save(output_path)
+# Always check errors if something looks off
+assert device.get_error() is None
 
-filter.release()
+result_u8 = np.array(np.clip(result * 255, 0, 255), dtype=np.uint8)
+Image.fromarray(result_u8).save(output_path)
 
+flt.release()
 device.release()
 ```
 
-Async version example can be found in `tests/test.py`
+The result:
 
-Please use `device.get_error` for error check.
+![denoised_result](imgs/result_denoised.png)
+
+## Notes
+
+- Error handling: use `device.get_error()` after creating/committing/executing.
+- Async example: see `tests/test.py`.
 
 ## License
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+This project is licensed under the MIT License. See [LICENSE](LICENSE).
 
 This project includes:
-- [Intel Open Image Denoise](https://github.com/RenderKit/oidn) - Licensed under Apache License 2.0
+
+- [Intel Open Image Denoise](https://github.com/RenderKit/oidn) (Apache License 2.0)

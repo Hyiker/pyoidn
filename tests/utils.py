@@ -1,4 +1,4 @@
-import OpenImageIO as oiio
+import simpleimageio as sio
 import os
 from pathlib import Path
 import sys
@@ -24,7 +24,7 @@ def temp_output_dir() -> Path:
 
 
 def read_image(name: str):
-    return oiio.ImageInput.open(str(data_dir() / name)).read_image(format=oiio.FLOAT)
+    return sio.read(str(data_dir() / name)).astype("float32")
 
 
 def setup_module():

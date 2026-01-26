@@ -25,14 +25,14 @@ def get_whl_platform():
         raise RuntimeError(f"Unsupported platform: {system} {machine}")
 
 
-def get_env_version() -> str:
-    version = os.environ.get("VERSION")
+def get_env_version(key: str) -> str:
+    version = os.environ.get(key)
     if version is None:
-        raise RuntimeError("VERSION environment variable is not set.")
+        raise RuntimeError(f"{key} environment variable is not set.")
     return version
 
 
-def write_version_py(version: str):
+def write_oidn_version_py(version: str):
     """Write the OIDN/package version into pyoidn/version.py."""
     version_file = Path(__file__).parent / "pyoidn" / "version.py"
     version_tmpl_file = Path(__file__).parent / "pyoidn" / "version.py.tmpl"
@@ -45,14 +45,14 @@ def write_version_py(version: str):
 
 # Ensure pyoidn/version.py is synchronized with the distribution version
 try:
-    write_version_py(get_env_version())
+    write_oidn_version_py(get_env_version("OIDN_VERSION"))
 except Exception as e:
     # Avoid failing the build if writing the version file encounters an unexpected issue
     print(f"Warning: failed to write pyoidn/version.py: {e}")
 
 setup(
     name="pyoidn",
-    version=get_env_version(),
+    version=get_env_version("VERSION"),
     packages=find_packages(),
     package_data={
         "pyoidn": ["oidn/**"],

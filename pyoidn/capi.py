@@ -1,8 +1,6 @@
-import importlib.resources
 from cffi import FFI
 import os
 import sys
-import importlib
 
 OIDN_TYPES = """
 typedef struct CUstream_st* cudaStream_t;
@@ -103,6 +101,8 @@ void oidnSetSharedFilterImage(OIDNFilter filter, const char* name,
                                        size_t width, size_t height,
                                        size_t byteOffset,
                                        size_t pixelByteStride, size_t rowByteStride);
+void oidnUnsetFilterImage(OIDNFilter filter, const char* name);
+
 OIDNFilter oidnNewFilter(OIDNDevice device, const char* type);
 void oidnCommitFilter(OIDNFilter filter);
 void oidnExecuteFilter(OIDNFilter filter);
@@ -146,23 +146,43 @@ def wrap_dylib(lib):
     return prefix + lib + suffix
 
 
-def __load_capi():
+def _load_oidn_library(ffi: FFI):
     is_win = os.name == "nt"
-
-    ffi = FFI()
-    ffi.cdef(OIDN_CAPI)
-    dll_dir = os.path.join(
-        os.path.dirname(__file__), "oidn", "bin" if is_win else "lib"
-    )
-    dylibs = [
-        wrap_dylib("OpenImageDenoise"),
-    ]
+    dll_dir = os.path.join(os.path.dirname(__file__), "oidn", "bin" if is_win else "lib")
+    dylibs = [wrap_dylib("OpenImageDenoise")]
     if is_win:
-        # Windows requires device .dll loaded
+        # Windows requires device .dll loaded first
         dylibs = [wrap_dylib("OpenImageDenoise_device_cpu")] + dylibs
+
+    entrypoint = None
     for dylib in dylibs:
         entrypoint = ffi.dlopen(os.path.join(dll_dir, dylib))
-    return ffi, entrypoint
+    return entrypoint
 
 
-oidn_ffi, oidn_Capi = __load_capi()
+class _OidnCapiProxy:
+    def __init__(self):
+        self._entrypoint = None
+        self._load_error = None
+
+    def _ensure_loaded(self):
+        if self._entrypoint is not None:
+            return self._entrypoint
+        if self._load_error is not None:
+            raise self._load_error
+        try:
+            self._entrypoint = _load_oidn_library(oidn_ffi)
+            return self._entrypoint
+        except Exception as e:
+            self._load_error = e
+            raise
+
+    def __getattr__(self, item):
+        entrypoint = self._ensure_loaded()
+        return getattr(entrypoint, item)
+
+
+# Always define the FFI/types at import time so unit tests can mock the C API
+oidn_ffi = FFI()
+oidn_ffi.cdef(OIDN_CAPI)
+oidn_Capi = _OidnCapiProxy()

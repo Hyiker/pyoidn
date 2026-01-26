@@ -32,7 +32,7 @@ class Device:
         oidn_Capi.oidnSyncDevice(self._device)
 
     def get_bool(self, name: str) -> bool:
-        return bool(oidn_Capi.oidnGetDeviceBool(self._device, name()))
+        return bool(oidn_Capi.oidnGetDeviceBool(self._device, c_str(name)))
 
     def set_bool(self, name: str, value: bool):
         oidn_Capi.oidnSetDeviceBool(self._device, c_str(name), value)
@@ -57,7 +57,11 @@ class Device:
         if oidn_ffi.NULL == out_message[0]:
             return None
         message = oidn_ffi.string(out_message[0])
-        return message.decode()
+        if isinstance(message, str):
+            return message
+        if isinstance(message, (bytes, bytearray, memoryview)):
+            return bytes(message).decode(errors="replace")
+        return str(message)
 
 
 def is_cpu_available():

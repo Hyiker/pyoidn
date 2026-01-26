@@ -36,12 +36,13 @@ class Filter:
         :param device: pyoidn device
         :param filter_type: filter type, see OIDN_FILTER_TYPE_*
         """
+        self._device = device
         self._filter = oidn_Capi.oidnNewFilter(device._device, c_str(filter_type))
 
     def set_image(
         self,
         name: str,
-        data: np.array,
+        data: np.ndarray,
         data_format: int,
         width: int = -1,
         height: int = -1,
@@ -66,30 +67,37 @@ class Filter:
             pixel_byte_stride,
             row_byte_stride,
         )
+    
+    def unset_image(self, name: str):
+        """Unset the input or output image for the filter
+
+        :param name: The name of the image to unset, see OIDN_IMAGE_*; typically "color", "albedo", "normal", etc.
+        """
+        oidn_Capi.oidnUnsetFilterImage(self._filter, c_str(name))
 
     def get_bool(self, name: str) -> bool:
-        return bool(oidn_Capi.oidnGetFilterBool(self._device, name()))
+        return bool(oidn_Capi.oidnGetFilterBool(self._filter, c_str(name)))
 
     def set_bool(self, name: str, value: bool):
-        oidn_Capi.oidnSetFilterBool(self._device, c_str(name), value)
+        oidn_Capi.oidnSetFilterBool(self._filter, c_str(name), value)
 
     def get_int(self, name: str) -> int:
-        return oidn_Capi.oidnGetFilterInt(self._device, c_str(name))
+        return oidn_Capi.oidnGetFilterInt(self._filter, c_str(name))
 
     def set_int(self, name: str, value: int):
-        oidn_Capi.oidnSetFilterInt(self._device, c_str(name), value)
+        oidn_Capi.oidnSetFilterInt(self._filter, c_str(name), value)
 
     def get_float(self, name: str) -> float:
-        return oidn_Capi.oidnGetFilterFloat(self._device, c_str(name))
+        return oidn_Capi.oidnGetFilterFloat(self._filter, c_str(name))
 
-    def set_int(self, name: str, value: float):
-        oidn_Capi.oidnSetFilterFloat(self._device, c_str(name), value)
+    def set_float(self, name: str, value: float):
+        oidn_Capi.oidnSetFilterFloat(self._filter, c_str(name), value)
 
     def set_value(self, k: str, value):
         if isinstance(value, int):
             self.set_int(k, value)
         elif isinstance(value, bool):
-            self.set_int(k, value)
+            self.set_bool(k, value)
         elif isinstance(value, float):
             self.set_float(k, value)
         else:

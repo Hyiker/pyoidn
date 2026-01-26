@@ -51,12 +51,15 @@ jobs:
         run: |
           . .github/workflows/scripts/download_oidn.sh
         env:
-          VERSION: ${{ env.VERSION }}
+          # Use OIDN version here for test
+          OIDN_VERSION: ${{ env.OIDN_VERSION }}
           PLATFORM: ${{ matrix.platform }}
           ARCH: ${{ matrix.arch }}
         shell: bash
 
       - name: Build and test
+        env:
+          VERSION: ${{ env.OIDN_VERSION }}
         run: |
           . .github/workflows/scripts/build.sh
           pip install -r requirements-test.txt

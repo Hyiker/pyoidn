@@ -63,6 +63,12 @@ class Device:
             return bytes(message).decode(errors="replace")
         return str(message)
 
+    def __enter__(self) -> "Device":
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        self.release()
+
 
 def is_cpu_available():
     return oidn_Capi.oidnIsCPUDeviceSupported()

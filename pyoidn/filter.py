@@ -1,7 +1,9 @@
 from .capi import oidn_Capi
 from .device import Device
+from .buffer import Buffer
 from .utils import c_str, np2c_ptr
 import numpy as np
+from typing import Union
 
 OIDN_FORMAT_UNDEFINED = 0
 
@@ -42,7 +44,7 @@ class Filter:
     def set_image(
         self,
         name: str,
-        data: np.ndarray,
+        data: Union[np.ndarray, Buffer],
         data_format: int,
         width: int = -1,
         height: int = -1,
@@ -53,21 +55,34 @@ class Filter:
         """Set the input or output image for the filter
 
         :param name: The name of the image to set, see OIDN_IMAGE_*; typically "color", "albedo", "normal", etc.
-        :param data: The numpy array containing image data to be used by the filter
+        :param data: The numpy array or Buffer containing image data to be used by the filter, the numpy array should be contiguous.
         :param data_format: The format of the data, e.g., OIDN_FORMAT_FLOAT, OIDN_FORMAT_FLOAT2, etc.
         """
-        oidn_Capi.oidnSetSharedFilterImage(
-            self._filter,
-            c_str(name),
-            np2c_ptr(data),
-            data_format,
-            data.shape[1] if width < 0 else width,
-            data.shape[0] if height < 0 else height,
-            byte_offset,
-            pixel_byte_stride,
-            row_byte_stride,
-        )
-    
+        if isinstance(data, Buffer):
+            oidn_Capi.oidnSetFilterImage(
+                self._filter,
+                c_str(name),
+                data._buffer,
+                data_format,
+                width,
+                height,
+                byte_offset,
+                pixel_byte_stride,
+                row_byte_stride,
+            )
+        elif isinstance(data, np.ndarray):
+            oidn_Capi.oidnSetSharedFilterImage(
+                self._filter,
+                c_str(name),
+                np2c_ptr(data),
+                data_format,
+                data.shape[1] if width < 0 else width,
+                data.shape[0] if height < 0 else height,
+                byte_offset,
+                pixel_byte_stride,
+                row_byte_stride,
+            )
+
     def unset_image(self, name: str):
         """Unset the input or output image for the filter
 
@@ -120,3 +135,10 @@ class Filter:
 
     def release(self):
         oidn_Capi.oidnReleaseFilter(self._filter)
+
+    def __enter__(self) -> "Filter":
+        return self
+
+    def __exit__(self, exc_type, exc, tb):
+        self.release()
+        return self

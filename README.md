@@ -3,15 +3,14 @@
 <img alt="GitHub Tag" src="https://img.shields.io/github/v/tag/Hyiker/pyoidn">
 <img alt="GitHub Actions Workflow Status" src="https://img.shields.io/github/actions/workflow/status/Hyiker/pyoidn/testing.yml">
 
-Unofficial Intel [Open Image Denoise (OIDN)](https://www.openimagedenoise.org/) Python binding.
+Yet another unofficial Intel [Open Image Denoise (OIDN)](https://www.openimagedenoise.org/) Python binding -- but more Pythonic.
 
-## What you get
+## Features
 
-- Simple `Device` / `Filter` wrapper around OIDN.
-- Numpy arrays as input/output buffers.
-- Optional auxiliary inputs (albedo/normal) for ray-traced denoising.
-
-Current implementation only supports NumPy input/output buffers. (A PyTorch version may be added in the future.)
+- Directly use NumPy arrays as input/output images.
+- Support all OIDN filter types.
+- Simple and clean API design.
+- Lightweight: only depends on NumPy and the OIDN shared library.
 
 ## Install
 
@@ -66,10 +65,36 @@ The result:
 
 ![denoised_result](imgs/result_denoised.png)
 
+pyoidn also supports RAII-style resource management using context managers:
+
+```python
+with pyoidn.Device() as device:
+    device.commit()
+    with pyoidn.Filter(device, "RT") as flt:
+        flt.set_bool("hdr", True)
+        # set images and other parameters
+        flt.commit()
+        flt.execute()
+```
+
 ## Notes
 
 - Error handling: use `device.get_error()` after creating/committing/executing.
 - Async example: see `tests/test.py`.
+
+## Roadmap
+
+- [x] CPU device support
+- [x] NumPy array support
+- [x] All filter types support
+- [x] OIDN buffer support
+- [x] RAII-style resource management
+- [ ] More device types
+  - [ ] CUDA
+  - [ ] SYCL
+  - [ ] Metal
+- [ ] Documents
+- [ ] Examples
 
 ## License
 

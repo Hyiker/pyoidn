@@ -52,6 +52,14 @@ typedef enum
   OIDN_FORMAT_HALF4,
 } OIDNFormat;
 
+typedef enum
+{
+  OIDN_STORAGE_UNDEFINED = 0,
+  OIDN_STORAGE_HOST      = 1,
+  OIDN_STORAGE_DEVICE    = 2,
+  OIDN_STORAGE_MANAGED   = 3,
+} OIDNStorage;
+
 typedef void (*OIDNErrorFunction)(void* userPtr, OIDNError code, const char* message);
 
 typedef struct OIDNDeviceImpl* OIDNDevice;
@@ -87,6 +95,17 @@ void oidnSetDeviceUInt(OIDNDevice device, const char* name, unsigned int value);
 OIDN_FUNCTION_BUFFER = """
 OIDNBuffer oidnNewBuffer(OIDNDevice device, size_t byteSize);
 OIDNBuffer oidnNewSharedBuffer(OIDNDevice device, void* devPtr, size_t byteSize);
+OIDNBuffer oidnNewBufferWithStorage(OIDNDevice device, size_t byteSize, OIDNStorage storage);
+size_t oidnGetBufferSize(OIDNBuffer buffer);
+OIDNStorage oidnGetBufferStorage(OIDNBuffer buffer);
+void* oidnGetBufferData(OIDNBuffer buffer);
+void oidnReadBuffer(OIDNBuffer buffer, size_t byteOffset, size_t byteSize, void* dstHostPtr);
+void oidnReadBufferAsync(OIDNBuffer buffer,
+                                  size_t byteOffset, size_t byteSize, void* dstHostPtr);
+void oidnWriteBuffer(OIDNBuffer buffer,
+                              size_t byteOffset, size_t byteSize, const void* srcHostPtr);
+void oidnWriteBufferAsync(OIDNBuffer buffer,
+                                   size_t byteOffset, size_t byteSize, const void* srcHostPtr);
 void oidnReleaseBuffer(OIDNBuffer buffer);
 """
 

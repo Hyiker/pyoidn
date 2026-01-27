@@ -1,7 +1,6 @@
 # PyOIDN: Intel Open Image Denoise Python binding
 
-<img alt="GitHub Tag" src="https://img.shields.io/github/v/tag/Hyiker/pyoidn">
-<img alt="GitHub Actions Workflow Status" src="https://img.shields.io/github/actions/workflow/status/Hyiker/pyoidn/testing.yml">
+[![GitHub Tag](https://img.shields.io/github/v/tag/Hyiker/pyoidn)](https://github.com/Hyiker/pyoidn/tags) [![Tests](https://img.shields.io/github/actions/workflow/status/Hyiker/pyoidn/testing.yml?branch=master)](https://github.com/Hyiker/pyoidn/actions/workflows/testing.yml) [![Docs](https://img.shields.io/github/actions/workflow/status/Hyiker/pyoidn/docs.yml?branch=master&label=docs)](https://github.com/Hyiker/pyoidn/actions/workflows/docs.yml)
 
 Yet another unofficial Intel [Open Image Denoise (OIDN)](https://www.openimagedenoise.org/) Python binding -- but more Pythonic.
 
@@ -82,6 +81,15 @@ with pyoidn.Device() as device:
 - Error handling: use `device.get_error()` after creating/committing/executing.
 - Async example: see `tests/test.py`.
 
+## Documentation
+
+Build locally:
+
+```bash
+pip install -r requirements-docs.txt
+mkdocs serve
+```
+
 ## Roadmap
 
 - [x] CPU device support
@@ -93,7 +101,7 @@ with pyoidn.Device() as device:
   - [ ] CUDA
   - [ ] SYCL
   - [ ] Metal
-- [ ] Documents
+- [x] Documents
 - [ ] Examples
 
 ## License

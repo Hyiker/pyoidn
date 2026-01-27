@@ -1,6 +1,38 @@
+"""Buffer wrapper.
+
+This module provides a thin Python wrapper around OIDN's buffer API.
+
+Buffers are owned by a :class:`pyoidn.device.Device` and can be used with
+filters via ``oidnSetFilterImage`` (buffer-based images) or manually read/written
+from host memory.
+
+Typical usage:
+
+.. code-block:: python
+
+    import pyoidn
+    import numpy as np
+
+    data = np.zeros((64, 64, 3), dtype=np.float32)
+    with pyoidn.Device() as device:
+        device.commit()
+
+        buf = pyoidn.Buffer(device, data.nbytes, storage=pyoidn.OIDN_STORAGE_HOST)
+        buf.write(0, data.nbytes, data)
+        # ... use buf with Filter.set_image(...)
+        buf.release()
+
+Notes
+-----
+- This wrapper mirrors OIDN's lifecycle: allocate -> use -> :meth:`Buffer.release`.
+- ``read*``/``write*`` take *host* buffers (e.g., ``bytes``, ``bytearray``,
+  ``memoryview``, NumPy arrays).
+- Refer to https://github.com/RenderKit/oidn?tab=readme-ov-file#buffers for the OIDN buffer functions.
+"""
+
 from __future__ import annotations
 
-from typing import Optional, Union
+from typing import Optional
 
 from .capi import oidn_Capi, oidn_ffi
 from .device import Device
@@ -12,6 +44,7 @@ OIDN_STORAGE_MANAGED = 3
 
 
 def _from_buffer(obj, require_writable: bool):
+    """Create a CFFI view for an object supporting the buffer protocol."""
     try:
         return oidn_ffi.from_buffer(obj, require_writable=require_writable)
     except TypeError:
@@ -34,6 +67,15 @@ class Buffer:
         byte_size: int,
         storage: Optional[int] = None,
     ) -> None:
+        """Create a new OIDN buffer.
+
+        :param device: The :class:`pyoidn.device.Device` that owns this buffer.
+        :param byte_size: Buffer size in bytes.
+        :param storage:
+            Optional storage type, one of ``OIDN_STORAGE_*``.
+            If omitted, OIDN chooses a default.
+        :raises ValueError: If ``byte_size`` is negative.
+        """
         if byte_size < 0:
             raise ValueError("byte_size must be >= 0")
 
@@ -45,7 +87,17 @@ class Buffer:
 
     @classmethod
     def shared(cls, device: Device, dev_ptr, byte_size: int) -> "Buffer":
-        """Create a shared buffer from an existing pointer."""
+        """Create a shared buffer from an existing pointer.
+
+        This wraps an external allocation as an OIDN buffer without copying.
+
+        :param device: The :class:`pyoidn.device.Device` that owns this buffer.
+        :param dev_ptr:
+            A pointer to existing memory. Can be an integer address or a cffi
+            pointer compatible with ``void*``.
+        :param byte_size: Buffer size in bytes.
+        :raises ValueError: If ``byte_size`` is negative.
+        """
         if byte_size < 0:
             raise ValueError("byte_size must be >= 0")
 
@@ -58,6 +110,10 @@ class Buffer:
         return self
 
     def release(self):
+        """Release the underlying OIDN buffer handle.
+
+        This method is idempotent.
+        """
         if getattr(self, "_buffer", None) is None:
             return
         oidn_Capi.oidnReleaseBuffer(self._buffer)
@@ -65,18 +121,31 @@ class Buffer:
 
     @property
     def size(self) -> int:
+        """Return the buffer size in bytes."""
         return int(oidn_Capi.oidnGetBufferSize(self._buffer))
 
     @property
     def storage(self) -> int:
+        """Return the storage type (one of ``OIDN_STORAGE_*``)."""
         return int(oidn_Capi.oidnGetBufferStorage(self._buffer))
 
     def get_data(self):
-        """Return the raw pointer returned by `oidnGetBufferData` (cffi pointer)."""
+        """Return the raw pointer returned by ``oidnGetBufferData``.
+
+        :return: A cffi pointer.
+        """
         return oidn_Capi.oidnGetBufferData(self._buffer)
 
     def read(self, byte_offset: int, byte_size: int, dst) -> None:
-        """Read from buffer into a writable host buffer (e.g., numpy array, bytearray, memoryview)."""
+        """Read from this buffer into a writable host buffer.
+
+        :param byte_offset: Offset in bytes.
+        :param byte_size: Number of bytes to read.
+        :param dst:
+            Destination host buffer. Must be writable and support the buffer protocol
+            (e.g., ``bytearray``, writable ``memoryview``, NumPy array).
+        :raises ValueError: If ``byte_offset`` or ``byte_size`` is negative.
+        """
         if byte_offset < 0 or byte_size < 0:
             raise ValueError("byte_offset/byte_size must be >= 0")
 
@@ -85,7 +154,16 @@ class Buffer:
         oidn_Capi.oidnReadBuffer(self._buffer, int(byte_offset), int(byte_size), dst_ptr)
 
     def read_async(self, byte_offset: int, byte_size: int, dst) -> None:
-        """Async version of `read` (synchronize via `Device.wait()`)."""
+        """Asynchronous version of :meth:`read`.
+
+        You must synchronize via :meth:`pyoidn.device.Device.wait` before reading
+        the destination.
+
+        :param byte_offset: Offset in bytes.
+        :param byte_size: Number of bytes to read.
+        :param dst: Destination host buffer (writable).
+        :raises ValueError: If ``byte_offset`` or ``byte_size`` is negative.
+        """
         if byte_offset < 0 or byte_size < 0:
             raise ValueError("byte_offset/byte_size must be >= 0")
 
@@ -94,7 +172,15 @@ class Buffer:
         oidn_Capi.oidnReadBufferAsync(self._buffer, int(byte_offset), int(byte_size), dst_ptr)
 
     def write(self, byte_offset: int, byte_size: int, src) -> None:
-        """Write into buffer from a host buffer (e.g., numpy array, bytes, memoryview)."""
+        """Write into this buffer from a host buffer.
+
+        :param byte_offset: Offset in bytes.
+        :param byte_size: Number of bytes to write.
+        :param src:
+            Source host buffer. Must support the buffer protocol
+            (e.g., ``bytes``, ``bytearray``, ``memoryview``, NumPy array).
+        :raises ValueError: If ``byte_offset`` or ``byte_size`` is negative.
+        """
         if byte_offset < 0 or byte_size < 0:
             raise ValueError("byte_offset/byte_size must be >= 0")
 
@@ -103,7 +189,16 @@ class Buffer:
         oidn_Capi.oidnWriteBuffer(self._buffer, int(byte_offset), int(byte_size), src_ptr)
 
     def write_async(self, byte_offset: int, byte_size: int, src) -> None:
-        """Async version of `write` (synchronize via `Device.wait()`)."""
+        """Asynchronous version of :meth:`write`.
+
+        You must synchronize via :meth:`pyoidn.device.Device.wait` before using
+        the written data.
+
+        :param byte_offset: Offset in bytes.
+        :param byte_size: Number of bytes to write.
+        :param src: Source host buffer.
+        :raises ValueError: If ``byte_offset`` or ``byte_size`` is negative.
+        """
         if byte_offset < 0 or byte_size < 0:
             raise ValueError("byte_offset/byte_size must be >= 0")
 
@@ -112,8 +207,13 @@ class Buffer:
         oidn_Capi.oidnWriteBufferAsync(self._buffer, int(byte_offset), int(byte_size), src_ptr)
 
     def __enter__(self) -> "Buffer":
+        """Enter a context manager.
+
+        :return: This buffer.
+        """
         return self
 
     def __exit__(self, exc_type, exc, tb):
+        """Exit a context manager and release the buffer."""
         self.release()
         return False

@@ -1,0 +1,38 @@
+site_name: pyoidn
+site_description: Unofficial Intel Open Image Denoise (OIDN) Python binding
+repo_url: https://github.com/Hyiker/pyoidn
+repo_name: Hyiker/pyoidn
+
+theme:
+  name: material
+  features:
+    - navigation.tabs
+    - navigation.sections
+    - content.code.copy
+
+nav:
+  - Home: index.md
+  - API:
+      - Overview: api/index.md
+      - Device: api/device.md
+      - Filter: api/filter.md
+      - Buffer: api/buffer.md
+
+plugins:
+  - search
+  - mkdocstrings:
+      handlers:
+        python:
+          paths: [.]  # import from repo root without installing the package
+          options:
+            show_source: false
+            show_signature_annotations: true
+            separate_signature: true
+            docstring_style: sphinx
+            merge_init_into_class: true
+
+markdown_extensions:
+  - admonition
+  - pymdownx.details
+  - pymdownx.superfences
+  - pymdownx.highlight

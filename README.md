@@ -2,7 +2,7 @@
 
 [![GitHub Tag](https://img.shields.io/github/v/tag/Hyiker/pyoidn)](https://github.com/Hyiker/pyoidn/tags) [![Tests](https://img.shields.io/github/actions/workflow/status/Hyiker/pyoidn/testing.yml?branch=master)](https://github.com/Hyiker/pyoidn/actions/workflows/testing.yml) [![Docs](https://img.shields.io/github/actions/workflow/status/Hyiker/pyoidn/docs.yml?branch=master&label=docs)](https://github.com/Hyiker/pyoidn/actions/workflows/docs.yml)
 
-Yet another unofficial Intel [Open Image Denoise (OIDN)](https://www.openimagedenoise.org/) Python binding -- but more Pythonic.
+Yet another unofficial Intel [Open Image Denoise (OIDN)](https://www.openimagedenoise.org/) Python binding -- but more Pythonic. Checkout [docs](https://pyoidn.carbene.cc/) for more details.
 
 ## Features
 

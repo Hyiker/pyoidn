@@ -55,6 +55,8 @@ jobs:
         run: |
           . .github/workflows/scripts/build.sh
           . .github/workflows/scripts/run_tests.sh
+        env:
+          PLATFORM: ${{ matrix.platform }}
         shell: bash
         continue-on-error: false
 

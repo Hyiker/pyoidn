@@ -60,6 +60,7 @@ jobs:
       - name: Build and test
         env:
           VERSION: ${{ env.OIDN_VERSION }}
+          PLATFORM: ${{ matrix.platform }}
         run: |
           . .github/workflows/scripts/build.sh
           . .github/workflows/scripts/run_tests.sh

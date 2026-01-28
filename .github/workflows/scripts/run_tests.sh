@@ -6,7 +6,7 @@ python -m unittest discover ./tests/
 
 # Run tests with torch
 python -m pip install --upgrade pip
-if [[ "${{ matrix.platform }}" == "linux" || "${{ matrix.platform }}" == "windows" ]]; then
+if [[ "${PLATFORM}" == "linux" || "${PLATFORM}" == "windows" ]]; then
 python -m pip install torch --index-url https://download.pytorch.org/whl/cpu --extra-index-url https://pypi.org/simple
 else
 # macOS wheels are available from the default index; keep it simple.

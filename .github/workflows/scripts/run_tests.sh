@@ -13,11 +13,9 @@ else
 python -m pip install torch
 fi
 
-python -c "import torch; import numpy; t = torch.tensor([1]); t.numpy()" 2>/dev/null
-
-if [ $? -ne 0 ]; then
-    echo "Downgrading to NumPy < 2.0 to restore compatibility..."
-    python -m pip install "numpy<2.0"
+# Disable test for x86_64 on macOS with torch due to lack of support.
+if [[ "${PLATFORM}" == "macos" && "${ARCH}" == "x86_64" ]]; then
+  exit 0
 fi
 
 python -m unittest discover ./tests/

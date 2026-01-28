@@ -26,6 +26,8 @@ The default installation only includes lightweight CPU support with [NumPy](http
 pip install pyoidn[torch]
 ```
 
+Note: this variant doesn't support Intel Macs, use the default installation instead.
+
 ## Quickstart
 
 Given a noisy image, plus its normal map and albedo map, denoise and save the result.

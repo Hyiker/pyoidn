@@ -57,6 +57,7 @@ jobs:
           . .github/workflows/scripts/run_tests.sh
         env:
           PLATFORM: ${{ matrix.platform }}
+          ARCH: ${{ matrix.arch }}
         shell: bash
         continue-on-error: false
 

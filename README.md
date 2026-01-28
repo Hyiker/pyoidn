@@ -20,7 +20,7 @@ To install the latest release from PyPI:
 pip install pyoidn
 ```
 
-The default installation only includes lightweight CPU support with [NumPy](https://numpy.org/). Additionally, pyoidn provides support via PyTorch which enables CUDA device support:
+The default installation only includes lightweight CPU support with [NumPy](https://numpy.org/). Additionally, pyoidn provides support via [PyTorch](https://pytorch.org/) which enables CUDA device support:
 
 ```bash
 pip install pyoidn[torch]

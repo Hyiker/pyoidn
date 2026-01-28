@@ -31,6 +31,16 @@ OIDN_DEVICE_TYPE_CUDA = 3
 OIDN_DEVICE_TYPE_HIP = 4
 OIDN_DEVICE_TYPE_METAL = 5
 
+__all__ = [
+    "Device",
+    "OIDN_DEVICE_TYPE_DEFAULT",
+    "OIDN_DEVICE_TYPE_CPU",
+    "OIDN_DEVICE_TYPE_SYCL",
+    "OIDN_DEVICE_TYPE_CUDA",
+    "OIDN_DEVICE_TYPE_HIP",
+    "OIDN_DEVICE_TYPE_METAL",
+]
+
 
 class Device:
     """Logical OIDN device.

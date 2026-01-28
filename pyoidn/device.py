@@ -21,8 +21,8 @@ Notes
 """
 
 from .capi import oidn_Capi, oidn_ffi
-from typing import Optional
-from .utils import c_str
+from typing import Optional, Any
+from .utils import c_str, require_torch
 
 OIDN_DEVICE_TYPE_DEFAULT = 0
 OIDN_DEVICE_TYPE_CPU = 1
@@ -30,6 +30,16 @@ OIDN_DEVICE_TYPE_SYCL = 2
 OIDN_DEVICE_TYPE_CUDA = 3
 OIDN_DEVICE_TYPE_HIP = 4
 OIDN_DEVICE_TYPE_METAL = 5
+
+__all__ = [
+    "Device",
+    "OIDN_DEVICE_TYPE_DEFAULT",
+    "OIDN_DEVICE_TYPE_CPU",
+    "OIDN_DEVICE_TYPE_SYCL",
+    "OIDN_DEVICE_TYPE_CUDA",
+    "OIDN_DEVICE_TYPE_HIP",
+    "OIDN_DEVICE_TYPE_METAL",
+]
 
 
 class Device:
@@ -53,6 +63,63 @@ class Device:
         """
         # FIXME: fail when use OIDN_DEVICE_TYPE_DEFAULT, figure out why
         self._device = oidn_Capi.oidnNewDevice(device_type)
+
+    @classmethod
+    def from_torch(cls, device: Any = None, stream: Any = None) -> "Device":
+        """Create an OIDN device from a PyTorch device/tensor.
+
+        This enables:
+        - CPU: creates an OIDN CPU device
+        - CUDA: creates an OIDN CUDA device bound to a torch CUDA stream
+
+        Parameters
+        ----------
+        device:
+            A torch.device / torch.Tensor / device string (e.g. "cuda:0", "cpu")
+            or None (defaults to current CUDA device if available, else CPU).
+        stream:
+            A torch.cuda.Stream to bind to (CUDA only). If None, uses
+            torch.cuda.current_stream(device).
+        """
+        require_torch()
+        import torch
+
+        torch_device = None
+        if device is None:
+            if torch.cuda.is_available():
+                torch_device = torch.device("cuda", torch.cuda.current_device())
+            else:
+                torch_device = torch.device("cpu")
+        elif isinstance(device, torch.Tensor):
+            torch_device = device.device
+        else:
+            torch_device = torch.device(device)
+
+        if torch_device.type == "cpu":
+            if not cls.is_cpu_available():
+                raise RuntimeError("OIDN CPU device backend is not supported on this machine")
+            obj = cls.__new__(cls)
+            obj._device = oidn_Capi.oidnNewDevice(OIDN_DEVICE_TYPE_CPU)
+            return obj
+
+        if torch_device.type != "cuda":
+            raise ValueError(f"Unsupported torch device type: {torch_device.type!r}")
+
+        device_id = 0 if torch_device.index is None else int(torch_device.index)
+        if not cls.is_cuda_available(device_id):
+            raise RuntimeError(f"OIDN CUDA device backend is not supported for device {device_id}")
+
+        if stream is None:
+            stream = torch.cuda.current_stream(device_id)
+
+        # torch returns an integer handle for the underlying CUstream.
+        stream_handle = int(getattr(stream, "cuda_stream"))
+        streams = oidn_ffi.new("cudaStream_t[]", [oidn_ffi.cast("cudaStream_t", stream_handle)])
+        device_ids = oidn_ffi.new("int[]", [device_id])
+
+        obj = cls.__new__(cls)
+        obj._device = oidn_Capi.oidnNewCUDADevice(device_ids, streams, 1)
+        return obj
 
     def commit(self) -> None:
         """Commit device parameters.

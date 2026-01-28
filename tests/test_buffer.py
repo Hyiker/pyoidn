@@ -143,6 +143,117 @@ class PyOidnBufferTest(unittest.TestCase):
             self.assertIsNone(device.get_error())
             device.release()
 
+    def test_shared_from_numpy_roundtrip(self):
+        import pyoidn
+
+        device = self._make_device()
+        try:
+            arr = np.arange(32, dtype=np.uint8)
+            buf = pyoidn.Buffer.shared_from_numpy(device, arr)
+            try:
+                self.assertEqual(buf.size, arr.nbytes)
+
+                dst = bytearray(arr.nbytes)
+                buf.read(0, arr.nbytes, dst)
+                self.assertEqual(bytes(dst), arr.tobytes())
+
+                new_src = bytes((i * 7) % 256 for i in range(arr.nbytes))
+                buf.write(0, arr.nbytes, new_src)
+                self.assertEqual(arr.tobytes(), new_src)
+            finally:
+                buf.release()
+        finally:
+            self.assertIsNone(device.get_error())
+            device.release()
+
+    def test_shared_from_numpy_requires_contiguous(self):
+        import pyoidn
+
+        device = self._make_device()
+        try:
+            base = np.zeros((8, 8), dtype=np.float32)
+            non_contig = base[:, ::2]
+            self.assertFalse(non_contig.flags["C_CONTIGUOUS"])
+
+            with self.assertRaises(ValueError):
+                pyoidn.Buffer.shared_from_numpy(device, non_contig)
+        finally:
+            self.assertIsNone(device.get_error())
+            device.release()
+
+    def test_shared_from_torch_cpu_roundtrip(self):
+        try:
+            import torch
+        except ImportError:
+            self.skipTest("torch not installed")
+
+        import pyoidn
+
+        device = self._make_device()
+        try:
+            t = torch.arange(32, dtype=torch.uint8).contiguous()
+            buf = pyoidn.Buffer.shared_from_torch(device, t)
+            try:
+                self.assertEqual(buf.size, t.numel() * t.element_size())
+
+                dst = bytearray(buf.size)
+                buf.read(0, buf.size, dst)
+                self.assertEqual(bytes(dst), t.numpy().tobytes())
+
+                new_src = bytes((255 - i) for i in range(buf.size))
+                buf.write(0, buf.size, new_src)
+                self.assertEqual(t.numpy().tobytes(), new_src)
+            finally:
+                buf.release()
+        finally:
+            self.assertIsNone(device.get_error())
+            device.release()
+
+    def test_shared_from_torch_requires_contiguous(self):
+        try:
+            import torch
+        except ImportError:
+            self.skipTest("torch not installed")
+
+        import pyoidn
+
+        device = self._make_device()
+        try:
+            t = torch.arange(16, dtype=torch.float32).reshape(4, 4).t()
+            self.assertFalse(t.is_contiguous())
+            with self.assertRaises(ValueError):
+                pyoidn.Buffer.shared_from_torch(device, t)
+        finally:
+            self.assertIsNone(device.get_error())
+            device.release()
+
+    def test_shared_from_torch_cuda_smoke(self):
+        try:
+            import torch
+        except ImportError:
+            self.skipTest("torch not installed")
+
+        if not torch.cuda.is_available():
+            self.skipTest("CUDA not available")
+
+        import pyoidn
+
+        device_id = torch.cuda.current_device()
+        if not pyoidn.Device.is_cuda_available(device_id):
+            self.skipTest("OIDN CUDA backend not available")
+
+        t = torch.empty((16,), device=torch.device("cuda", device_id), dtype=torch.uint8).contiguous()
+        with pyoidn.Device.from_torch(torch.device("cuda", device_id)) as device:
+            device.commit()
+            self.assertIsNone(device.get_error())
+
+            buf = pyoidn.Buffer.shared_from_torch(device, t)
+            try:
+                self.assertEqual(buf.size, t.numel() * t.element_size())
+            finally:
+                buf.release()
+            self.assertIsNone(device.get_error())
+
     def test_release_idempotent(self):
         import pyoidn
 

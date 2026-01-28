@@ -32,15 +32,25 @@ Notes
 
 from __future__ import annotations
 
-from typing import Optional
+from typing import Optional, Any
 
 from .capi import oidn_Capi, oidn_ffi
 from .device import Device
+from .utils import require_torch
+import numpy as np
 
 OIDN_STORAGE_UNDEFINED = 0
 OIDN_STORAGE_HOST = 1
 OIDN_STORAGE_DEVICE = 2
 OIDN_STORAGE_MANAGED = 3
+
+__all__ = [
+    "Buffer",
+    "OIDN_STORAGE_UNDEFINED",
+    "OIDN_STORAGE_HOST",
+    "OIDN_STORAGE_DEVICE",
+    "OIDN_STORAGE_MANAGED",
+]
 
 
 def _from_buffer(obj, require_writable: bool):
@@ -83,7 +93,9 @@ class Buffer:
         if storage is None:
             self._buffer = oidn_Capi.oidnNewBuffer(device._device, int(byte_size))
         else:
-            self._buffer = oidn_Capi.oidnNewBufferWithStorage(device._device, int(byte_size), int(storage))
+            self._buffer = oidn_Capi.oidnNewBufferWithStorage(
+                device._device, int(byte_size), int(storage)
+            )
 
     @classmethod
     def shared(cls, device: Device, dev_ptr, byte_size: int) -> "Buffer":
@@ -106,7 +118,61 @@ class Buffer:
 
         if isinstance(dev_ptr, int):
             dev_ptr = oidn_ffi.cast("void*", dev_ptr)
-        self._buffer = oidn_Capi.oidnNewSharedBuffer(device._device, dev_ptr, int(byte_size))
+        self._buffer = oidn_Capi.oidnNewSharedBuffer(
+            device._device, dev_ptr, int(byte_size)
+        )
+        return self
+
+    @classmethod
+    def shared_from_numpy(cls, device: Device, array: np.ndarray) -> "Buffer":
+        """Create a shared buffer from a NumPy array.
+
+        This wraps the NumPy array's memory as an OIDN buffer without copying.
+
+        :param device: The :class:`pyoidn.device.Device` that owns this buffer.
+        :param array: A NumPy array in host memory.
+        :raises ValueError: If the array is not contiguous.
+        """
+        if not array.flags["C_CONTIGUOUS"] and not array.flags["F_CONTIGUOUS"]:
+            raise ValueError("NumPy array must be contiguous")
+
+        self = cls.__new__(cls)
+        self._device = device
+
+        ptr = oidn_ffi.cast("void*", oidn_ffi.from_buffer(array))
+        byte_size = array.nbytes
+        self._buffer = oidn_Capi.oidnNewSharedBuffer(
+            device._device, ptr, int(byte_size)
+        )
+        return self
+
+    @classmethod
+    def shared_from_torch(cls, device: Device, tensor: Any) -> "Buffer":
+        """Create a shared buffer from a PyTorch tensor.
+
+        This wraps the tensor's memory as an OIDN buffer without copying.
+
+        :param device: The :class:`pyoidn.device.Device` that owns this buffer.
+        :param tensor: A PyTorch tensor in host or device memory.
+        :raises ImportError: If PyTorch is not available.
+        :raises ValueError: If the tensor is not contiguous.
+        """
+        require_torch()
+        import torch
+
+        if not tensor.is_contiguous():
+            raise ValueError("PyTorch tensor must be contiguous")
+
+        self = cls.__new__(cls)
+        self._device = device
+
+        from .torch_utils import torch2c_ptr
+
+        ptr = torch2c_ptr(tensor)
+        byte_size = tensor.numel() * tensor.element_size()
+        self._buffer = oidn_Capi.oidnNewSharedBuffer(
+            device._device, ptr, int(byte_size)
+        )
         return self
 
     def release(self):
@@ -151,7 +217,9 @@ class Buffer:
 
         dst_mv = dst if isinstance(dst, memoryview) else memoryview(dst)
         dst_ptr = oidn_ffi.cast("void*", _from_buffer(dst_mv, require_writable=True))
-        oidn_Capi.oidnReadBuffer(self._buffer, int(byte_offset), int(byte_size), dst_ptr)
+        oidn_Capi.oidnReadBuffer(
+            self._buffer, int(byte_offset), int(byte_size), dst_ptr
+        )
 
     def read_async(self, byte_offset: int, byte_size: int, dst) -> None:
         """Asynchronous version of :meth:`read`.
@@ -169,7 +237,9 @@ class Buffer:
 
         dst_mv = dst if isinstance(dst, memoryview) else memoryview(dst)
         dst_ptr = oidn_ffi.cast("void*", _from_buffer(dst_mv, require_writable=True))
-        oidn_Capi.oidnReadBufferAsync(self._buffer, int(byte_offset), int(byte_size), dst_ptr)
+        oidn_Capi.oidnReadBufferAsync(
+            self._buffer, int(byte_offset), int(byte_size), dst_ptr
+        )
 
     def write(self, byte_offset: int, byte_size: int, src) -> None:
         """Write into this buffer from a host buffer.
@@ -185,8 +255,12 @@ class Buffer:
             raise ValueError("byte_offset/byte_size must be >= 0")
 
         src_mv = src if isinstance(src, memoryview) else memoryview(src)
-        src_ptr = oidn_ffi.cast("const void*", _from_buffer(src_mv, require_writable=False))
-        oidn_Capi.oidnWriteBuffer(self._buffer, int(byte_offset), int(byte_size), src_ptr)
+        src_ptr = oidn_ffi.cast(
+            "const void*", _from_buffer(src_mv, require_writable=False)
+        )
+        oidn_Capi.oidnWriteBuffer(
+            self._buffer, int(byte_offset), int(byte_size), src_ptr
+        )
 
     def write_async(self, byte_offset: int, byte_size: int, src) -> None:
         """Asynchronous version of :meth:`write`.
@@ -203,8 +277,12 @@ class Buffer:
             raise ValueError("byte_offset/byte_size must be >= 0")
 
         src_mv = src if isinstance(src, memoryview) else memoryview(src)
-        src_ptr = oidn_ffi.cast("const void*", _from_buffer(src_mv, require_writable=False))
-        oidn_Capi.oidnWriteBufferAsync(self._buffer, int(byte_offset), int(byte_size), src_ptr)
+        src_ptr = oidn_ffi.cast(
+            "const void*", _from_buffer(src_mv, require_writable=False)
+        )
+        oidn_Capi.oidnWriteBufferAsync(
+            self._buffer, int(byte_offset), int(byte_size), src_ptr
+        )
 
     def __enter__(self) -> "Buffer":
         """Enter a context manager.

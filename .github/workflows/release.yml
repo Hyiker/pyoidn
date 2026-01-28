@@ -54,8 +54,10 @@ jobs:
       - name: Build and test
         run: |
           . .github/workflows/scripts/build.sh
-          pip install -r requirements-test.txt
-          python -m unittest discover ./tests/
+          . .github/workflows/scripts/run_tests.sh
+        env:
+          PLATFORM: ${{ matrix.platform }}
+          ARCH: ${{ matrix.arch }}
         shell: bash
         continue-on-error: false
 

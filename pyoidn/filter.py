@@ -34,9 +34,9 @@ Notes
 from .capi import oidn_Capi
 from .device import Device
 from .buffer import Buffer
-from .utils import c_str, np2c_ptr
+from .utils import c_str, np2c_ptr, TORCH_AVAILABLE
 import numpy as np
-from typing import Union
+from typing import Any
 
 OIDN_FORMAT_UNDEFINED = 0
 
@@ -63,6 +63,29 @@ OIDN_IMAGE_OUTPUT = "output"
 OIDN_FILTER_TYPE_RT = "RT"
 OIDN_FILTER_TYPE_RT_LIGHTMAP = "RTLightmap"
 
+__all__ = [
+    "Filter",
+    "OIDN_FORMAT_UNDEFINED",
+    "OIDN_FORMAT_FLOAT",
+    "OIDN_FORMAT_FLOAT2",
+    "OIDN_FORMAT_FLOAT3",
+    "OIDN_FORMAT_FLOAT4",
+    "OIDN_FORMAT_HALF",
+    "OIDN_FORMAT_HALF2",
+    "OIDN_FORMAT_HALF3",
+    "OIDN_FORMAT_HALF4",
+    "OIDN_QUALITY_DEFAULT",
+    "OIDN_QUALITY_FAST",
+    "OIDN_QUALITY_BALANCED",
+    "OIDN_QUALITY_HIGH",
+    "OIDN_IMAGE_COLOR",
+    "OIDN_IMAGE_ALBEDO",
+    "OIDN_IMAGE_NORMAL",
+    "OIDN_IMAGE_OUTPUT",
+    "OIDN_FILTER_TYPE_RT",
+    "OIDN_FILTER_TYPE_RT_LIGHTMAP",
+]
+
 
 class Filter:
     """OIDN filter.
@@ -81,7 +104,7 @@ class Filter:
     def set_image(
         self,
         name: str,
-        data: Union[np.ndarray, Buffer],
+        data: Any,
         data_format: int,
         width: int = -1,
         height: int = -1,
@@ -100,7 +123,8 @@ class Filter:
             ``OIDN_IMAGE_COLOR``, ``OIDN_IMAGE_ALBEDO``, ``OIDN_IMAGE_NORMAL``,
             ``OIDN_IMAGE_OUTPUT``.
         :param data:
-            NumPy array (host memory) or :class:`pyoidn.buffer.Buffer`.
+            NumPy array (host memory), :class:`pyoidn.buffer.Buffer` or
+            ``torch.Tensor`` (if PyTorch is available). The array/tensor must be contiguous.
         :param data_format:
             One of ``OIDN_FORMAT_*`` (e.g. ``OIDN_FORMAT_FLOAT3``).
         :param width:
@@ -141,7 +165,22 @@ class Filter:
                 pixel_byte_stride,
                 row_byte_stride,
             )
+        elif TORCH_AVAILABLE:
+            import torch
+            from .torch_utils import torch2c_ptr
 
+            if isinstance(data, torch.Tensor):
+                oidn_Capi.oidnSetSharedFilterImage(
+                    self._filter,
+                    c_str(name),
+                    torch2c_ptr(data),
+                    data_format,
+                    data.shape[1] if width < 0 else width,
+                    data.shape[0] if height < 0 else height,
+                    byte_offset,
+                    pixel_byte_stride,
+                    row_byte_stride,
+                )
         else:
             raise TypeError(f"Unsupported image type: {type(data)}")
 

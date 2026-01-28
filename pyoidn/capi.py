@@ -78,6 +78,7 @@ OIDN_CONSTANTS = """
 
 OIDN_FUNCTION_DEVICE = """
 OIDNDevice oidnNewDevice(OIDNDeviceType type);
+OIDNDevice oidnNewCUDADevice(const int* deviceIDs, const cudaStream_t* streams, int numPairs);
 void oidnCommitDevice(OIDNDevice device);
 void oidnSyncDevice(OIDNDevice device);
 void oidnReleaseDevice(OIDNDevice device);

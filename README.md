@@ -10,11 +10,20 @@ Yet another unofficial Intel [Open Image Denoise (OIDN)](https://www.openimagede
 - Support all OIDN filter types.
 - Simple and clean API design.
 - Lightweight: only depends on NumPy and the OIDN shared library.
+- CUDA device support (via PyTorch).
 
 ## Install
 
+To install the latest release from PyPI:
+
 ```bash
 pip install pyoidn
+```
+
+The default installation only includes lightweight CPU support with [NumPy](https://numpy.org/). Additionally, pyoidn provides support via PyTorch which enables CUDA device support:
+
+```bash
+pip install pyoidn[torch]
 ```
 
 ## Quickstart
@@ -76,6 +85,28 @@ with pyoidn.Device() as device:
         flt.execute()
 ```
 
+
+If you have installed the PyTorch support, you can also use CUDA devices:
+
+```python
+torch_device = torch.device("cuda:0")
+color_t = torch.from_numpy(color).to(device=torch_device, dtype=torch.float32).contiguous()
+normal_t = torch.from_numpy(normal).to(device=torch_device, dtype=torch.float32).contiguous()
+albedo_t = torch.from_numpy(albedo).to(device=torch_device, dtype=torch.float32).contiguous()
+result_t = torch.zeros_like(color_t, dtype=torch.float32, device=torch_device)
+with pyoidn.Device(torch_device) as device:
+    device.commit()
+    with pyoidn.Filter(device, "RT") as flt:
+        # set images and other parameters
+        flt.set_image(pyoidn.OIDN_IMAGE_COLOR, color_t, pyoidn.OIDN_FORMAT_FLOAT3)
+        flt.set_image(pyoidn.OIDN_IMAGE_NORMAL, normal_t, pyoidn.OIDN_FORMAT_FLOAT3)
+        flt.set_image(pyoidn.OIDN_IMAGE_ALBEDO, albedo_t, pyoidn.OIDN_FORMAT_FLOAT3)
+        flt.set_image(pyoidn.OIDN_IMAGE_OUTPUT, result_t, pyoidn.OIDN_FORMAT_FLOAT3)
+
+        flt.commit()
+        flt.execute()
+```
+
 ## Notes
 
 - Error handling: use `device.get_error()` after creating/committing/executing.
@@ -98,7 +129,7 @@ mkdocs serve
 - [x] OIDN buffer support
 - [x] RAII-style resource management
 - [ ] More device types
-  - [ ] CUDA
+  - [x] CUDA (torch)
   - [ ] SYCL
   - [ ] Metal
 - [x] Documents

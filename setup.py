@@ -60,6 +60,9 @@ setup(
     include_package_data=True,
     python_requires=">=3.7",
     install_requires=["numpy", "cffi>=1.0.0"],
+    extras_require={
+        "torch": ["torch>=2.0.0"],
+    },
     author="Carbene Hu",
     author_email="hyikerhu0212@gmail.com",
     description="Intel Open Image Denoise(OIDN) python binding.",

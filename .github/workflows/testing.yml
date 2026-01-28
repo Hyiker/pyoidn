@@ -62,7 +62,6 @@ jobs:
           VERSION: ${{ env.OIDN_VERSION }}
         run: |
           . .github/workflows/scripts/build.sh
-          pip install -r requirements-test.txt
-          python -m unittest discover ./tests/
+          . .github/workflows/scripts/run_tests.sh
         shell: bash
         continue-on-error: false

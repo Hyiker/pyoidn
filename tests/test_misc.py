@@ -9,7 +9,7 @@ class PyOidnMiscTest(unittest.TestCase):
     def test_version_string(self):
         import pyoidn
 
-        self.assertEqual(pyoidn.version.oidn_version, "2.4.0")
+        self.assertEqual(pyoidn.version.oidn_version, "2.5.0")
 
 
 if __name__ == "__main__":

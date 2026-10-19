@@ -36,11 +36,13 @@ from .filter import (
 	OIDN_QUALITY_FAST,
 	OIDN_QUALITY_HIGH,
 )
+from .denoise import denoise
 
 from . import utils as utils
 from . import version as version
 
 __all__ = [
+	"denoise",
 	# Modules
 	"utils",
 	"version",

@@ -1,4 +1,6 @@
 mkdocs>=1.6
 mkdocs-material>=9.5
 mkdocstrings[python]>=0.25
-pymdown-extensions>=10.0
+# Python 3.10 uses mkdocstrings <=1.0.6, which needs the pre-12.2 Highlight API.
+# https://github.com/mkdocstrings/mkdocstrings/issues/829
+pymdown-extensions>=10.0,<12.2
